@@ -1,6 +1,7 @@
-from rest_framework import serializers
-from .models import AirPortInfo, Flight, Aircraft
 import airportsdata
+from rest_framework import serializers
+
+from .models import Aircraft, AirPortInfo, Flight
 
 airports = airportsdata.load()
 
@@ -17,10 +18,7 @@ class AircraftSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-
 class AirPortInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = AirPortInfo
         fields = "__all__"
-        
-        
