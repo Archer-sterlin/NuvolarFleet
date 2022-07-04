@@ -1,114 +1,163 @@
-from django.shortcuts import render
-from django.shortcuts import get_object_or_404
+from datetime import datetime 
+from django.utils import timezone
 from rest_framework import generics, response, status
-from .serializers import AirPortInfoSerializer, FlightScheduleSerializer, FlightSerializer, AircraftSerializer
-from .models import AirPortInfo, ArrivalInfo, DepartureInfo, Flight, Aircraft
-import airportsdata
+from .serializers import (
+    AirPortInfoSerializer,
+    FlightSerializer,
+    AircraftSerializer,
+)
+from .models import AirPortInfo, Flight, Aircraft
 
 
-airports_data = airportsdata.load()
-CIAOs = airports_data.keys()
+now = timezone.now()
 
-# Create your views here.
-class AirCraftView(generics.ListCreateAPIView):
-    # permission_classes = [IsAuthenticated]
-    # authentication_classes = [TokenAuthentication]
+class AirCraftView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = AircraftSerializer
     queryset = Aircraft.objects.all()
 
+class ListAirCraftView(generics.ListCreateAPIView):
+    serializer_class = AircraftSerializer
+    queryset = Aircraft.objects.all()
 
 class AirportInfoView(generics.ListCreateAPIView):
     serializer_class = AirPortInfoSerializer
-    queryset = AirPortInfo.objects.all()
+    queryset = AirPortInfo.objects.all()[:10]
+
+class EditAirportInfoView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = AirPortInfoSerializer
+    queryset = AirPortInfo.objects.all()[:10]
+
+
+class DepartureFlightsView(generics.ListAPIView):
+    serializer_class = FlightSerializer
+    def get_queryset(self):
+        return Flight.objects.filter(departure_airport=self.kwargs["icao"])
+
+
+class ArrivalFlightsView(generics.ListAPIView):
+    serializer_class = FlightSerializer
+    def get_queryset(self):
+        return Flight.objects.filter(arrival_airport=self.kwargs["icao"])
     
+class FlightScheduleView(generics.ListCreateAPIView):
+    serializer_class = FlightSerializer
+    queryset = Flight.objects.all()     
     
-class FlightScheduleView(generics.CreateAPIView):
-    serializer_class = FlightScheduleSerializer
-    queryset = Flight.objects.all()
+class EditFlightScheduleView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = FlightSerializer
+    queryset = Flight.objects.all() 
     
     def post(self, request, *args, **kwargs):
-        try:
+        try: 
             serializer = self.serializer_class(data=request.data)
             if serializer.is_valid(raise_exception=True):
-                arrival_at = serializer.validated_data["arrival_airport_icao"]
-                departure_at = serializer.validated_data["departure_airport_icao"]
-                arrival_time = serializer.validated_data["arrival_time"]
-                departure_time = serializer.validated_data["departure_time"]
-               
-                airports = AirPortInfo.objects.all()
-                arrival_airport = airports.get(icao=arrival_at)
-                departure_airport = airports.get(icao=departure_at)
-             
-                arrival_airport.save()    
-                departure_airport.save()
-                          
-                arrival_info = ArrivalInfo.objects.create(
-                    airport_info=arrival_airport,
-                    estemated_time=arrival_time  
-                )
-                arrival_info.save()
+                airport = AirPortInfo.objects.all()[:]
+                icao_arrival = serializer.validated_data["arrival_airport"].upper()
+                icao_departure = serializer.validated_data["departure_airport"].upper()
+                arrival_airport = airport.get(icao=icao_arrival)
+                arrival = serializer.validated_data["arrival"]
+                departure = serializer.validated_data["departure"]
+                departure_airport = airport.get(icao=icao_arrival)
+                aircraft = serializer.validated_data["aircaft"]
                 
-                departure_info = DepartureInfo.objects.create(
-                    airport_info=departure_airport,
-                    estemated_time=departure_time  
-                )
-                departure_info.save()
+                if arrival == departure:
+                         raise Exception("arrival airport cannot be the same as departure airport")
                 
-                flight = Flight.objects.create(
-                    arrival_details=arrival_info,
-                    departure_details=departure_info,
-                )
-            
-                flight.save()
-                data = {
-                    "id":flight.id,
-                    "arrival_airport":{
-                        "name":flight.arrival_details.airport_info.name,
-                        "ICAO":flight.arrival_details.airport_info.icao,
-                        },
-                    "departure_airport":{
-                        "name":flight.departure_details.airport_info.name,
-                        "ICAO":flight.departure_details.airport_info.icao,
-                        },
-                    "arrival_time":arrival_time,
-                    "departure_time":departure_time
-                }
-                return response.Response(data, status=status.HTTP_201_CREATED)
-          
-        except Exception as error:
-             return response.Response(data={"message":f"{error}"}, status=status.HTTP_400_BAD_REQUEST)
-            
+                if  (arrival < departure) and (departure >= now):
+                    raise Exception("Invalid date, make sure dates are future date and arrival date does not precede date")
+                    
 
-class ListFlightView(generics.ListAPIView):
+                flight = Flight.objects.create(
+                                arrival_airport=icao_arrival,
+                                departure_details=icao_departure,
+                                aircraft = aircraft,
+                                arrival=serializer.validated_data["arrival"],
+                                departure=serializer.validated_data["departure"]
+                            )
+
+                flight.save()
+                    
+                data = {
+                    "id": flight.id,
+                    "arrival_airport": {
+                        "name": arrival_airport.name,
+                        "ICAO": arrival_airport.icao,
+                        "city":arrival_airport.city,
+                        "country":arrival_airport.country,
+                    },
+                    "departure_airport": {
+                        "name": departure_airport.name,
+                        "ICAO": departure_airport.icao,
+                        "city":departure_airport.city,
+                        "country":departure_airport.country,
+                    },
+                    "arrival": flight.arrival,
+                    "departure": flight.departure,
+                    "aircraft":flight.aircraft
+                }
+                
+                return response.Response(data, status=status.HTTP_201_CREATED)
+            
+        except Exception as error:
+            return response.Response(
+                data={"message": f"{error}"}, status=status.HTTP_400_BAD_REQUEST
+            )   
+
+
+class TimeIntervalListFlightView(generics.ListAPIView):
     serializer_class = FlightSerializer
-    queryset = Flight.objects.all()
+    queryset = Flight
     
     def get(self, request, *args, **kwargs):
         try:
-            flight_list = Flight.objects.all()
-            return flights(flight_list)
+            start = timezone.make_aware(datetime.strptime(kwargs["departure"], "%d-%m-%Y-%H:%M:%S"))
+            stop = timezone.make_aware(datetime.strptime(kwargs["arrival"], "%d-%m-%Y-%H:%M:%S"))
+            airports = AirPortInfo.objects.all()
+            departure_airport_list = Flight.objects.filter(
+                departure__gt=start, arrival__lt=stop
+            )
+            data = []
+            for info in departure_airport_list:
+                print(start, stop)
+                a_airport = airports.get(icao=info.arrival_airport)
+                
+                d_airport = airports.get(icao=info.depature_airport)
+                
+                data.append({
+                    "dparture_airport":{
+                                    "name":d_airport.name,
+                                    "ICAO": d_airport.icao,
+                                    "city": d_airport.city,
+                                    "country": a_airport.country,
+                                    "lat": d_airport.lat,
+                                    "lon": d_airport.lon,
+                                    "time_zone": d_airport.tz,
+                                    "flights": d_airport
+                                    },
+                    "arrival_airport":{
+                                    "name":a_airport.name,
+                                    "ICAO": a_airport.icao,
+                                    "city": a_airport.city,
+                                    "country": a_airport.country,
+                                    "lat": a_airport.lat,
+                                    "lon": a_airport.lon,
+                                    "time_zone": a_airport.tz,
+                                    "flights": a_airport
+                                    },
+                    
+                    "aircraft": {
+                        "serial number":info.aircraft.serial_number,
+                        },
+                    # "time_interval": abs((( info.arrival - info.departure).total_seconds()) // 60)        
+                    
+                })
+            
+            return response.Response(data, status=status.HTTP_200_OK)
 
         except Exception as error:
-            return response.Response({"error": error}, status=status.HTTP_400_BAD_REQUEST)
+            return response.Response(
+                {"error": error}, status=status.HTTP_400_BAD_REQUEST
+            )
 
 
-    
-def flights(flight_list):
-    data = []
-    print(flight_list)
-    for flight in flight_list:
-        data.append( { 
-                "id":flight.id,
-                "arrival_airport":{
-                    "name":flight.arrival_details.airport_info.name,
-                    "ICAO":flight.arrival_details.airport_info.icao,
-                    },
-                "departure_airport":{
-                    "name":flight.departure_details.airport_info.name,
-                    "ICAO":flight.departure_details.airport_info.icao,
-                    },
-                "arrival_time":flight.arrival_details.estemated_time,
-                "departure_time":flight.departure_details.estemated_time,   
-        })
-  
-    return response.Response(data, status=status.HTTP_200_OK)
+
