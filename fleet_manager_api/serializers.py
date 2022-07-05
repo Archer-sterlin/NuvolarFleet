@@ -1,9 +1,6 @@
-import airportsdata
 from rest_framework import serializers
 
 from .models import Aircraft, AirPortInfo, Flight
-
-airports = airportsdata.load()
 
 
 class FlightSerializer(serializers.ModelSerializer):

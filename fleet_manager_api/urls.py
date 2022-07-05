@@ -17,14 +17,14 @@ urlpatterns = [
         "flight/edit/<uuid:pk>/", EditFlightScheduleView.as_view(), name="flight-edit"
     ),
     path(
-        "flights/depature/time/range/<departure>/<arrival>/",
+        "flights/depature/time/range/<from>/<to>/",
         TimeIntervalListFlightView.as_view(),
-        name="sarch-range",
+        name="search-range-arrival",
     ),
     path(
         "flights/depature/<icao>",
         DepartureFlightsView.as_view(),
-        name="sarch-departure",
+        name="search-range-departure",
     ),
     path("flights/arrival/<icao>", ArrivalFlightsView.as_view(), name="sarch-arrival"),
 ]

@@ -1,11 +1,14 @@
 from datetime import datetime
 
+import airportsdata
 from django.utils import timezone
 from rest_framework import generics, response, status
 
 from .models import Aircraft, AirPortInfo, Flight
 from .serializers import (AircraftSerializer, AirPortInfoSerializer,
                           FlightSerializer)
+
+airports = airportsdata.load()
 
 now = timezone.now()
 
@@ -48,23 +51,20 @@ class FlightScheduleView(generics.ListCreateAPIView):
     serializer_class = FlightSerializer
     queryset = Flight.objects.all()
 
-
-class EditFlightScheduleView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = FlightSerializer
-    queryset = Flight.objects.all()
-
     def post(self, request, *args, **kwargs):
         try:
+            print("in")
             serializer = self.serializer_class(data=request.data)
+
             if serializer.is_valid(raise_exception=True):
-                airport = AirPortInfo.objects.all()[:]
+                airport = AirPortInfo.objects.all()
                 icao_arrival = serializer.validated_data["arrival_airport"].upper()
                 icao_departure = serializer.validated_data["departure_airport"].upper()
                 arrival_airport = airport.get(icao=icao_arrival)
                 arrival = serializer.validated_data["arrival"]
                 departure = serializer.validated_data["departure"]
-                departure_airport = airport.get(icao=icao_arrival)
-                aircraft = serializer.validated_data["aircaft"]
+                departure_airport = airport.get(icao=icao_departure)
+                aircraft = serializer.validated_data["aircraft"]
 
                 if arrival == departure:
                     raise Exception(
@@ -78,7 +78,7 @@ class EditFlightScheduleView(generics.RetrieveUpdateDestroyAPIView):
 
                 flight = Flight.objects.create(
                     arrival_airport=icao_arrival,
-                    departure_details=icao_departure,
+                    departure_airport=icao_departure,
                     aircraft=aircraft,
                     arrival=serializer.validated_data["arrival"],
                     departure=serializer.validated_data["departure"],
@@ -88,21 +88,24 @@ class EditFlightScheduleView(generics.RetrieveUpdateDestroyAPIView):
 
                 data = {
                     "id": flight.id,
-                    "arrival_airport": {
-                        "name": arrival_airport.name,
-                        "ICAO": arrival_airport.icao,
-                        "city": arrival_airport.city,
-                        "country": arrival_airport.country,
-                    },
                     "departure_airport": {
                         "name": departure_airport.name,
                         "ICAO": departure_airport.icao,
                         "city": departure_airport.city,
                         "country": departure_airport.country,
                     },
+                    "arrival_airport": {
+                        "name": arrival_airport.name,
+                        "ICAO": arrival_airport.icao,
+                        "city": arrival_airport.city,
+                        "country": arrival_airport.country,
+                    },
                     "arrival": flight.arrival,
                     "departure": flight.departure,
-                    "aircraft": flight.aircraft,
+                    "aircraft": {
+                        "serial number": flight.aircraft.serial_number,
+                        "manufacturer": flight.aircraft.manufacturer,
+                    },
                 }
 
                 return response.Response(data, status=status.HTTP_201_CREATED)
@@ -113,6 +116,11 @@ class EditFlightScheduleView(generics.RetrieveUpdateDestroyAPIView):
             )
 
 
+class EditFlightScheduleView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = FlightSerializer
+    queryset = Flight.objects.all()
+
+
 class TimeIntervalListFlightView(generics.ListAPIView):
     serializer_class = FlightSerializer
     queryset = Flight
@@ -120,48 +128,41 @@ class TimeIntervalListFlightView(generics.ListAPIView):
     def get(self, request, *args, **kwargs):
         try:
             start = timezone.make_aware(
-                datetime.strptime(kwargs["departure"], "%d-%m-%Y-%H:%M:%S")
+                datetime.strptime(kwargs["from"], "%d-%m-%Y-%H:%M:%S")
             )
             stop = timezone.make_aware(
-                datetime.strptime(kwargs["arrival"], "%d-%m-%Y-%H:%M:%S")
+                datetime.strptime(kwargs["to"], "%d-%m-%Y-%H:%M:%S")
             )
+            if start > stop:
+                raise ValueError("start time range cannot be ahead of stop time range")
+
             airports = AirPortInfo.objects.all()
             departure_airport_list = Flight.objects.filter(
-                departure__gt=start, arrival__lt=stop
+                departure__gt=start, departure__lt=stop
             )
             data = []
             for info in departure_airport_list:
-                print(start, stop)
-                a_airport = airports.get(icao=info.arrival_airport)
-
-                d_airport = airports.get(icao=info.depature_airport)
-
+                d_airport = airports.get(icao=info.departure_airport)
                 data.append(
                     {
-                        "dparture_airport": {
+                        "departure_airport": {
                             "name": d_airport.name,
                             "ICAO": d_airport.icao,
                             "city": d_airport.city,
-                            "country": a_airport.country,
+                            "country": d_airport.country,
                             "lat": d_airport.lat,
                             "lon": d_airport.lon,
                             "time_zone": d_airport.tz,
-                            "flights": d_airport,
-                        },
-                        "arrival_airport": {
-                            "name": a_airport.name,
-                            "ICAO": a_airport.icao,
-                            "city": a_airport.city,
-                            "country": a_airport.country,
-                            "lat": a_airport.lat,
-                            "lon": a_airport.lon,
-                            "time_zone": a_airport.tz,
-                            "flights": a_airport,
+                            "flights": departure_airport_list.filter(
+                                departure_airport=d_airport.icao
+                            ).count(),
                         },
                         "aircraft": {
-                            "serial number": info.aircraft.serial_number,
+                            "serial_number": info.aircraft.serial_number,
+                            "flight time": abs(
+                                ((info.arrival - info.departure).total_seconds()) // 60
+                            ),
                         },
-                        # "time_interval": abs((( info.arrival - info.departure).total_seconds()) // 60)
                     }
                 )
 
