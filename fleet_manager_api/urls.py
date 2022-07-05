@@ -12,7 +12,6 @@ from .views import (
     TimeIntervalListFlightView,
 )
 
-app_name = "nuvolar-fleet-api"
 
 urlpatterns = [
     path("aircrafts/", ListAirCraftView.as_view(), name="list-create-aircrafts"),
@@ -24,7 +23,7 @@ urlpatterns = [
     path(
         "flights/depature/time/range/<from>/<to>/",
         TimeIntervalListFlightView.as_view(),
-        name="list-depature-time",
+        name="list-departure-time",
     ),
     path(
         "flights/depature/<icao>",
