@@ -18,7 +18,7 @@ class Aircraft(models.Model):
 
 class AirPortInfo(models.Model):
     id = models.UUIDField(primary_key=True, unique=True, default=uuid4, editable=False)
-    icao = models.CharField(max_length=10, unique=True)
+    icao = models.CharField(max_length=4, unique=True)
     name = models.CharField(max_length=255)
     city = models.CharField(max_length=255)
     subd = models.CharField(max_length=255)
@@ -34,13 +34,12 @@ class AirPortInfo(models.Model):
 
 class Flight(models.Model):
     id = models.UUIDField(primary_key=True, unique=True, default=uuid4, editable=False)
-    aircraft = models.ForeignKey(
-        Aircraft, on_delete=models.SET_NULL, blank=True, null=True
-    )
-    arrival_airport = models.CharField(max_length=4)
+    aircraft = models.ForeignKey(Aircraft, on_delete=models.SET_NULL, blank=True, null=True)
     departure_airport = models.CharField(max_length=4)
-    arrival = models.DateTimeField()
+    arrival_airport = models.CharField(max_length=4)
     departure = models.DateTimeField()
+    arrival = models.DateTimeField()
+
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True, editable=False)
 
