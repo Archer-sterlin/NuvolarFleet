@@ -34,7 +34,9 @@ class AirPortInfo(models.Model):
 
 class Flight(models.Model):
     id = models.UUIDField(primary_key=True, unique=True, default=uuid4, editable=False)
-    aircraft = models.ForeignKey(Aircraft, on_delete=models.SET_NULL, blank=True, null=True)
+    aircraft = models.ForeignKey(
+        Aircraft, on_delete=models.SET_NULL, blank=True, null=True
+    )
     departure_airport = models.CharField(max_length=4)
     arrival_airport = models.CharField(max_length=4)
     departure = models.DateTimeField()

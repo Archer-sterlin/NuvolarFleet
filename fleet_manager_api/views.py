@@ -5,7 +5,8 @@ from django.utils import timezone
 from rest_framework import generics, response, status
 
 from .models import Aircraft, AirPortInfo, Flight
-from .serializers import AircraftSerializer, AirPortInfoSerializer, FlightSerializer
+from .serializers import (AircraftSerializer, AirPortInfoSerializer,
+                          FlightSerializer)
 
 now = timezone.now()
 
@@ -22,7 +23,35 @@ class ListAirCraftView(generics.ListCreateAPIView):
 
 class AirportInfoView(generics.ListCreateAPIView):
     serializer_class = AirPortInfoSerializer
-    queryset = AirPortInfo.objects.all()
+    queryset = AirPortInfo.objects.all()[:100]
+
+    def post(self, request, *args, **kwargs):
+        try:
+            serializer = self.serializer_class(data=request.data)
+            if serializer.is_valid(raise_exception=True):
+                airport_data = serializer.validated_data
+
+                icaoRegex = re.compile(r"^\d{2}[A-Z]{2}$")
+                validate_icao = (
+                    icaoRegex.search(serializer.validated_data["icao"]) is None
+                )
+
+                if validate_icao:
+                    raise ValueError(
+                        "Invalid depature icao must conatin two digits and two uppercase letters"
+                    )
+
+                airport = AirPortInfo(**airport_data)
+                airport.save()
+                return response.Response(
+                    data={"success": "Airport added successfully"},
+                    status=status.HTTP_201_CREATED,
+                )
+
+        except Exception as error:
+            return response.Response(
+                data={"message": f"{error}"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class EditAirportInfoView(generics.RetrieveUpdateDestroyAPIView):
@@ -66,12 +95,12 @@ class FlightScheduleView(generics.ListCreateAPIView):
                 check_depature_icao = icaoRegex.search(icao_departure) is None
                 check_arrival_icao = icaoRegex.search(icao_arrival) is None
 
-                if check_depature_icao is None:
+                if check_depature_icao:
                     raise ValueError(
                         "Invalid depature icao must conatin two digits and two uppercase letters"
                     )
 
-                if check_arrival_icao is None:
+                if check_arrival_icao:
                     raise ValueError(
                         "Invalid arrival icao must conatin two digits and two uppercase letters"
                     )
@@ -83,7 +112,9 @@ class FlightScheduleView(generics.ListCreateAPIView):
                 aircraft = serializer.validated_data["aircraft"]
 
                 if icao_arrival == icao_departure:
-                    raise Exception("arrival airport cannot be the same as departure airport")
+                    raise Exception(
+                        "arrival airport cannot be the same as departure airport"
+                    )
 
                 if (arrival <= departure) or (departure < now):
                     raise Exception(
@@ -116,11 +147,14 @@ class FlightScheduleView(generics.ListCreateAPIView):
                     },
                     "arrival": flight.arrival,
                     "departure": flight.departure,
-                    "aircraft": {
+                    "aircraft": "Unassigned",
+                }
+
+                if aircraft:
+                    data["aircraft"] = {
                         "serial number": flight.aircraft.serial_number,
                         "manufacturer": flight.aircraft.manufacturer,
-                    },
-                }
+                    }
 
                 return response.Response(data, status=status.HTTP_201_CREATED)
 
@@ -137,17 +171,23 @@ class EditFlightScheduleView(generics.RetrieveUpdateDestroyAPIView):
 
 class TimeIntervalListFlightView(generics.ListAPIView):
     serializer_class = FlightSerializer
-    queryset = Flight
+    queryset = Flight.objects.all()
 
     def get(self, request, *args, **kwargs):
         try:
-            start = timezone.make_aware(datetime.strptime(kwargs["from"], "%d-%m-%Y-%H:%M:%S"))
-            stop = timezone.make_aware(datetime.strptime(kwargs["to"], "%d-%m-%Y-%H:%M:%S"))
+            start = timezone.make_aware(
+                datetime.strptime(kwargs["from"], "%d-%m-%Y-%H:%M:%S")
+            )
+            stop = timezone.make_aware(
+                datetime.strptime(kwargs["to"], "%d-%m-%Y-%H:%M:%S")
+            )
             if start > stop:
                 raise ValueError("start time range cannot be ahead of stop time range")
 
             airports = AirPortInfo.objects.all()
-            departure_airport_list = Flight.objects.filter(departure__gt=start, departure__lt=stop)
+            departure_airport_list = Flight.objects.filter(
+                departure__gt=start, departure__lt=stop
+            )
             data = []
             for info in departure_airport_list:
                 d_airport = airports.get(icao=info.departure_airport)
@@ -177,4 +217,6 @@ class TimeIntervalListFlightView(generics.ListAPIView):
             return response.Response(data, status=status.HTTP_200_OK)
 
         except Exception as error:
-            return response.Response({"error": error}, status=status.HTTP_400_BAD_REQUEST)
+            return response.Response(
+                {"error": error}, status=status.HTTP_400_BAD_REQUEST
+            )
