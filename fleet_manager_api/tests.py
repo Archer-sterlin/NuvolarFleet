@@ -59,8 +59,10 @@ class TestListUpdateRetiveDeleteAircraft(APITestCase):
         res_patch = self.client.patch(
             reverse(self.aircraft_url, kwargs={"pk": self.aircraft.id}), aircraft_info_patch
         )
+        res_delete = self.client.delete(reverse(self.aircraft_url, kwargs={"pk": self.aircraft.id}))
 
         self.assertEqual(res_get.status_code, status.HTTP_200_OK)
         self.assertEqual(res_put.status_code, status.HTTP_200_OK)
         self.assertEqual(res_fail_put.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(res_patch.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_delete.status_code, status.HTTP_204_NO_CONTENT)
