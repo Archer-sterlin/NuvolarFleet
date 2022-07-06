@@ -1,6 +1,5 @@
 import re
 from datetime import datetime
-from django.shortcuts import get_object_or_404
 
 from django.utils import timezone
 from rest_framework import generics, response, status
@@ -58,30 +57,6 @@ class AirportInfoView(generics.ListCreateAPIView):
 class EditAirportInfoView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = AirPortInfoSerializer
     queryset = AirPortInfo.objects.all()
-    
-    def put(self, request, *args, **kwargs):
-        try:
-            serializer = self.serializer_class(data=request.data)
-            if serializer.is_valid(raise_exception=True):
-                if serializer.validated_data["icao"]:
-                    icaoRegex = re.compile(r"^\d{2}[A-Z]{2}$")
-                    validate_icao = (
-                        icaoRegex.search(serializer.validated_data["icao"]) is None
-                    )
-                    print(validate_icao)
-                    if validate_icao:
-                        raise ValueError(
-                            "Invalid depature icao must conatin two digits and two uppercase letters"
-                        )
-
-            return super().put(request, *args, **kwargs)
-
-        except Exception as error:
-            return response.Response(
-                data={"message": f"{error}"}, status=status.HTTP_400_BAD_REQUEST
-            )
-    
-    
 
 
 class DepartureFlightsView(generics.ListAPIView):
@@ -216,28 +191,30 @@ class TimeIntervalListFlightView(generics.ListAPIView):
             data = []
             for info in departure_airport_list:
                 d_airport = airports.get(icao=info.departure_airport)
-                data.append(
-                    {
-                        "departure_airport": {
-                            "name": d_airport.name,
-                            "ICAO": d_airport.icao,
-                            "city": d_airport.city,
-                            "country": d_airport.country,
-                            "lat": d_airport.lat,
-                            "lon": d_airport.lon,
-                            "time_zone": d_airport.tz,
-                            "flights": departure_airport_list.filter(
-                                departure_airport=d_airport.icao
-                            ).count(),
-                        },
-                        "aircraft": {
-                            "serial_number": info.aircraft.serial_number,
-                            "flight time": abs(
-                                ((info.arrival - info.departure).total_seconds()) // 60
-                            ),
-                        },
+                temp = {
+                    "departure_airport": {
+                        "name": d_airport.name,
+                        "ICAO": d_airport.icao,
+                        "city": d_airport.city,
+                        "country": d_airport.country,
+                        "lat": d_airport.lat,
+                        "lon": d_airport.lon,
+                        "time_zone": d_airport.tz,
+                        "flights": departure_airport_list.filter(
+                            departure_airport=d_airport.icao
+                        ).count(),
+                    },
+                    "aircraft": "Unassigned",
+                }
+
+                if info.aircraft:
+                    temp["aircraft"] = {
+                        "serial_number": info.aircraft.serial_number,
+                        "flight time": abs(
+                            ((info.arrival - info.departure).total_seconds()) // 60
+                        ),
                     }
-                )
+                data.append(temp)
 
             return response.Response(data, status=status.HTTP_200_OK)
 

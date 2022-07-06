@@ -27,5 +27,5 @@ urlpatterns = [
         DepartureFlightsView.as_view(),
         name="search-departure",
     ),
-    path("flights/arrival/<icao>", ArrivalFlightsView.as_view(), name="sarch-arrival"),
+    path("flights/arrival/<icao>", ArrivalFlightsView.as_view(), name="search-arrival"),
 ]
