@@ -1,14 +1,11 @@
+import re
 from datetime import datetime
 
-import airportsdata
 from django.utils import timezone
 from rest_framework import generics, response, status
 
 from .models import Aircraft, AirPortInfo, Flight
-from .serializers import (AircraftSerializer, AirPortInfoSerializer,
-                          FlightSerializer)
-
-airports = airportsdata.load()
+from .serializers import AircraftSerializer, AirPortInfoSerializer, FlightSerializer
 
 now = timezone.now()
 
@@ -55,7 +52,7 @@ class FlightScheduleView(generics.ListCreateAPIView):
         try:
             serializer = self.serializer_class(data=request.data)
             if serializer.is_valid(raise_exception=True):
-                airport = AirPortInfo.objects.all()
+                airports = AirPortInfo.objects.all()
                 icao_arrival = (
                     serializer.validated_data["arrival_airport"][0:2]
                     + serializer.validated_data["arrival_airport"][2:].upper()
@@ -64,10 +61,25 @@ class FlightScheduleView(generics.ListCreateAPIView):
                     serializer.validated_data["departure_airport"][0:2]
                     + serializer.validated_data["departure_airport"][2:].upper()
                 )
-                arrival_airport = airport.get(icao=icao_arrival)
+
+                icaoRegex = re.compile(r"^\d{2}[A-Z]{2}$")
+                check_depature_icao = icaoRegex.search(icao_departure) is None
+                check_arrival_icao = icaoRegex.search(icao_arrival) is None
+
+                if check_depature_icao is None:
+                    raise ValueError(
+                        "Invalid depature icao must conatin two digits and two uppercase letters"
+                    )
+
+                if check_arrival_icao is None:
+                    raise ValueError(
+                        "Invalid arrival icao must conatin two digits and two uppercase letters"
+                    )
+
+                arrival_airport = airports.get(icao=icao_arrival)
                 arrival = serializer.validated_data["arrival"]
                 departure = serializer.validated_data["departure"]
-                departure_airport = airport.get(icao=icao_departure)
+                departure_airport = airports.get(icao=icao_departure)
                 aircraft = serializer.validated_data["aircraft"]
 
                 if icao_arrival == icao_departure:

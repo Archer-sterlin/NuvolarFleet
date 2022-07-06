@@ -1,9 +1,16 @@
 from django.urls import path
 
-from .views import (AirCraftView, AirportInfoView, ArrivalFlightsView,
-                    DepartureFlightsView, EditAirportInfoView,
-                    EditFlightScheduleView, FlightScheduleView,
-                    ListAirCraftView, TimeIntervalListFlightView)
+from .views import (
+    AirCraftView,
+    AirportInfoView,
+    ArrivalFlightsView,
+    DepartureFlightsView,
+    EditAirportInfoView,
+    EditFlightScheduleView,
+    FlightScheduleView,
+    ListAirCraftView,
+    TimeIntervalListFlightView,
+)
 
 urlpatterns = [
     path("aircrafts/", ListAirCraftView.as_view(), name="list-create-aircrafts"),
