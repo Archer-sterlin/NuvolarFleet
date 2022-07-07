@@ -331,7 +331,7 @@ class TestFlightEndpoint(APITestCase):
         res = self.client.get(
             reverse(
                 self.list_departure_time_url,
-                kwargs={"from": "06-07-2022-08:00:00", "to": "06-08-2022-08:00:00"},
+                kwargs={"from": "06-07-2022+08:00:00", "to": "06-08-2022+08:00:00"},
             )
         )
         self.assertEqual(res.status_code, status.HTTP_200_OK)

@@ -9,4 +9,4 @@ pipenv can also be used for venv
 3. run `python manage.py test` run test
 4. run `python manage.py runserver` to start local server
 5. while the server is running, make a request to `http://127.0.0.1:8000/swagger/` for openapi documentation 
-6. time range request parameter format  `day-month-year-hours:minutes:seconds` i.e `08-07-2022-02:50:00` 
+6. time range request parameter format  `day-month-year-hours:minutes:seconds` i.e `08-07-2022+02:50:00` 

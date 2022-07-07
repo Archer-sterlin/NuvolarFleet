@@ -176,10 +176,10 @@ class TimeIntervalListFlightView(generics.ListAPIView):
     def get(self, request, *args, **kwargs):
         try:
             start = timezone.make_aware(
-                datetime.strptime(kwargs["from"], "%d-%m-%Y-%H:%M:%S")
+                datetime.strptime(kwargs["from"], "%d-%m-%Y+%H:%M:%S")
             )
             stop = timezone.make_aware(
-                datetime.strptime(kwargs["to"], "%d-%m-%Y-%H:%M:%S")
+                datetime.strptime(kwargs["to"], "%d-%m-%Y+%H:%M:%S")
             )
             if start > stop:
                 raise ValueError("start time range cannot be ahead of stop time range")
