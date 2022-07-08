@@ -42,19 +42,13 @@ class TestAircraftEndpoint(APITestCase):
         self.assertGreaterEqual(len(res.data), 1)
 
     def test_create_aircraft(self):
-        res_create = self.client.post(
-            reverse(self.list_create_aircrafts_url), self.aircraft_info
-        )
-        res_fail = self.client.post(
-            reverse(self.list_create_aircrafts_url), self.aircraft_info
-        )
+        res_create = self.client.post(reverse(self.list_create_aircrafts_url), self.aircraft_info)
+        res_fail = self.client.post(reverse(self.list_create_aircrafts_url), self.aircraft_info)
         self.assertEqual(res_create.status_code, status.HTTP_201_CREATED)
         self.assertEqual(res_fail.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_get_aircraft(self):
-        res = self.client.get(
-            reverse(self.aircraft_url, kwargs={"pk": self.aircraft_id})
-        )
+        res = self.client.get(reverse(self.aircraft_url, kwargs={"pk": self.aircraft_id}))
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data.get("id"), self.aircraft_id)
 
@@ -64,9 +58,7 @@ class TestAircraftEndpoint(APITestCase):
             self.aircraft_info_put,
         )
 
-        res_fail_put = self.client.put(
-            reverse(self.aircraft_url, kwargs={"pk": self.aircraft_id})
-        )
+        res_fail_put = self.client.put(reverse(self.aircraft_url, kwargs={"pk": self.aircraft_id}))
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res_fail_put.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -80,9 +72,7 @@ class TestAircraftEndpoint(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
 
     def test_delete_aircraft(self):
-        res = self.client.delete(
-            reverse(self.aircraft_url, kwargs={"pk": self.aircraft_id})
-        )
+        res = self.client.delete(reverse(self.aircraft_url, kwargs={"pk": self.aircraft_id}))
 
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
 
@@ -103,7 +93,7 @@ class TestAirPortInfoEndpoint(APITestCase):
             "tz": "America/Anchorage",
         }
         self.airport = AirPortInfo.objects.create(**self.airport_info)
-        self.airport_id = self.airport.id
+        self.airport_id = self.airport.icao
         self.airport.save()
 
     def test_list_airport(self):
@@ -124,16 +114,14 @@ class TestAirPortInfoEndpoint(APITestCase):
             "tz": "America/Anchorage",
         }
         res = self.client.post(reverse(self.list_create_aircrafts_url), airport_info)
-        res_fail = self.client.post(
-            reverse(self.list_create_aircrafts_url), self.airport_info
-        )
+        res_fail = self.client.post(reverse(self.list_create_aircrafts_url), self.airport_info)
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         self.assertEqual(res_fail.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_get_airport(self):
-        res = self.client.get(reverse(self.airport_url, kwargs={"pk": self.airport_id}))
+        res = self.client.get(reverse(self.airport_url, kwargs={"icao": self.airport_id}))
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(uuid.UUID(res.data.get("id")), self.airport_id)
+        self.assertEqual(res.data.get("icao"), self.airport_id)
 
     def test_put_airport(self):
         airport_info = {
@@ -148,13 +136,11 @@ class TestAirPortInfoEndpoint(APITestCase):
             "tz": "America/Anchorage",
         }
         res = self.client.put(
-            reverse(self.airport_url, kwargs={"pk": self.airport_id}),
+            reverse(self.airport_url, kwargs={"icao": self.airport_id}),
             airport_info,
         )
 
-        res_fail_put = self.client.put(
-            reverse(self.airport_url, kwargs={"pk": self.airport_id})
-        )
+        res_fail_put = self.client.put(reverse(self.airport_url, kwargs={"icao": self.airport_id}))
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data.get("name"), "Sister-Margret")
         self.assertEqual(res.data.get("city"), "Anchor-Point")
@@ -163,16 +149,14 @@ class TestAirPortInfoEndpoint(APITestCase):
     def test_patch_airport(self):
         airport_info_patch = {"name": "Sister Magret"}
         res = self.client.patch(
-            reverse(self.airport_url, kwargs={"pk": self.airport_id}),
+            reverse(self.airport_url, kwargs={"icao": self.airport_id}),
             airport_info_patch,
         )
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data.get("name"), "Sister Magret")
 
     def test_delete_airport(self):
-        res = self.client.delete(
-            reverse(self.airport_url, kwargs={"pk": self.airport_id})
-        )
+        res = self.client.delete(reverse(self.airport_url, kwargs={"icao": self.airport_id}))
 
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
 
@@ -260,16 +244,12 @@ class TestFlightEndpoint(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
 
     def test_get_flight(self):
-        res = self.client.get(
-            reverse(self.edit_flight_url, kwargs={"pk": self.flight_id})
-        )
+        res = self.client.get(reverse(self.edit_flight_url, kwargs={"pk": self.flight_id}))
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(uuid.UUID(res.data.get("id")), self.flight_id)
 
     def test_delete_flight(self):
-        res = self.client.delete(
-            reverse(self.edit_flight_url, kwargs={"pk": self.flight_id})
-        )
+        res = self.client.delete(reverse(self.edit_flight_url, kwargs={"pk": self.flight_id}))
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_put_flight(self):
@@ -283,9 +263,9 @@ class TestFlightEndpoint(APITestCase):
         res = self.client.put(
             reverse(self.edit_flight_url, kwargs={"pk": self.flight_id}), flight_info
         )
-        res_arrival = res.data.get("arrival").replace("T", " ")
+        res_arrival = res.data.get("arrival")
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(res_arrival[0:-1], str(self.three_days_from_now)[0:-6])
+        self.assertEqual(res_arrival, self.three_days_from_now)
 
     def test_patch_flight(self):
         flight_info = {
@@ -298,29 +278,22 @@ class TestFlightEndpoint(APITestCase):
         res = self.client.patch(
             reverse(self.edit_flight_url, kwargs={"pk": self.flight_id}), flight_info
         )
-
-        res_arrival = res.data.get("arrival").replace("T", " ")
-        res_departure = res.data.get("departure").replace("T", " ")
+        res_arrival = res.data.get("arrival")
+        res_departure = res.data.get("departure")
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(res_arrival[0:-1], str(self.next_tomorrow)[0:-6])
-        self.assertEqual(res_departure[0:-1], str(self.tomorrow)[0:-6])
+        self.assertEqual(res_arrival, self.next_tomorrow)
+        self.assertEqual(res_departure, self.tomorrow)
 
     def test_search_by_departure(self):
-        res_empty = self.client.get(
-            reverse(self.search_departure_url, kwargs={"icao": "883GG"})
-        )
-        res = self.client.get(
-            reverse(self.search_departure_url, kwargs={"icao": "88GG"})
-        )
+        res_empty = self.client.get(reverse(self.search_departure_url, kwargs={"icao": "883GG"}))
+        res = self.client.get(reverse(self.search_departure_url, kwargs={"icao": "88GG"}))
         self.assertEqual(res_empty.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res_empty.data), 0)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertGreaterEqual(len(res.data), 1)
 
     def test_search_by_arrival(self):
-        res_empty = self.client.get(
-            reverse(self.search_arrival_url, kwargs={"icao": "883GG"})
-        )
+        res_empty = self.client.get(reverse(self.search_arrival_url, kwargs={"icao": "883GG"}))
         res = self.client.get(reverse(self.search_arrival_url, kwargs={"icao": "96GG"}))
         self.assertEqual(res_empty.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res_empty.data), 0)
@@ -331,7 +304,7 @@ class TestFlightEndpoint(APITestCase):
         res = self.client.get(
             reverse(
                 self.list_departure_time_url,
-                kwargs={"from": "06-07-2022-08:00:00", "to": "06-08-2022-08:00:00"},
+                kwargs={"from": "06-07-2022+08:00:00", "to": "06-08-2022+08:00:00"},
             )
         )
         self.assertEqual(res.status_code, status.HTTP_200_OK)
