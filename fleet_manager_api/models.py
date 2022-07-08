@@ -21,12 +21,12 @@ class AirPortInfo(models.Model):
     icao = models.CharField(max_length=4, unique=True)
     name = models.CharField(max_length=255)
     city = models.CharField(max_length=255)
-    subd = models.CharField(max_length=255)
+    subd = models.CharField(max_length=255, null=True, blank=True)
     country = models.CharField(max_length=255)
-    elevation = models.FloatField(default=0.0)
-    lat = models.FloatField(default=0.0)
-    lon = models.FloatField(default=0.0)
-    tz = models.CharField(max_length=255)
+    elevation = models.FloatField(default=0.0, null=True, blank=True)
+    lat = models.FloatField(default=0.0, null=True, blank=True)
+    lon = models.FloatField(default=0.0, null=True, blank=True)
+    tz = models.CharField(max_length=255, null=True, blank=True)
 
     def __str__(self):
         return f"{self.icao} - {self.name}"
@@ -34,9 +34,7 @@ class AirPortInfo(models.Model):
 
 class Flight(models.Model):
     id = models.UUIDField(primary_key=True, unique=True, default=uuid4, editable=False)
-    aircraft = models.ForeignKey(
-        Aircraft, on_delete=models.SET_NULL, blank=True, null=True
-    )
+    aircraft = models.ForeignKey(Aircraft, on_delete=models.SET_NULL, blank=True, null=True)
     departure_airport = models.CharField(max_length=4)
     arrival_airport = models.CharField(max_length=4)
     departure = models.DateTimeField()

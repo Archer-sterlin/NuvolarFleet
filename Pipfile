@@ -32,6 +32,7 @@ sqlparse = "==0.4.2"
 uritemplate = "==4.1.1"
 urllib3 = "==1.26.9"
 airportsdata = "*"
+psycopg2-binary = "*"
 
 [dev-packages]
 
