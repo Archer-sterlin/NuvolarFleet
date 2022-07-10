@@ -1,9 +1,16 @@
 from django.urls import path
 
-from .views import (AirCraftView, AirportInfoView, ArrivalFlightsView,
-                    DepartureFlightsView, EditAirportInfoView,
-                    EditFlightScheduleView, FlightScheduleView,
-                    ListAirCraftView, TimeIntervalListFlightView)
+from .views import (
+    AirCraftView,
+    AirportInfoView,
+    ArrivalFlightsView,
+    DepartureFlightsView,
+    EditAirportInfoView,
+    EditFlightScheduleView,
+    FlightScheduleView,
+    ListAirCraftView,
+    TimeIntervalListFlightView,
+)
 
 urlpatterns = [
     # aircraft CRUD operations
@@ -16,14 +23,14 @@ urlpatterns = [
     path("flight/", FlightScheduleView.as_view(), name="list-create-flight"),
     path("flight/edit/<uuid:pk>/", EditFlightScheduleView.as_view(), name="edit-flight"),
     path(
-        "flights/depature/time/range/<from>/<to>/",
+        "flights/departure/time/range/<from>/<to>/",
         TimeIntervalListFlightView.as_view(),
         name="list-departure-time",
     ),
     path(
-        "flights/depature/<icao>",
+        "flights/departure/<icao>/",
         DepartureFlightsView.as_view(),
         name="search-departure",
     ),
-    path("flights/arrival/<icao>", ArrivalFlightsView.as_view(), name="search-arrival"),
+    path("flights/arrival/<icao>/", ArrivalFlightsView.as_view(), name="search-arrival"),
 ]
