@@ -28,8 +28,8 @@ SECRET_KEY = config("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config("DEBUG", cast=bool, default=False)
 
-ALLOWED_HOSTS = ["0.0.0.0"]
-
+ALLOWED_HOSTS = ["*"]
+DOCKER = False
 
 # Application definition
 
@@ -82,8 +82,7 @@ WSGI_APPLICATION = "project.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
-
-if os.environ.get("DOCKER"):
+if DOCKER:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
