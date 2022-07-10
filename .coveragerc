@@ -1,0 +1,6 @@
+[run]
+source=fleet_manager_api/
+omit=
+    */migrations/*
+    */tests/*
+    */__init__.py

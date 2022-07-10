@@ -6,7 +6,8 @@ from django.utils import timezone
 from rest_framework import generics, response, status
 
 from .models import Aircraft, AirPortInfo, Flight
-from .serializers import AircraftSerializer, AirPortInfoSerializer, FlightSerializer
+from .serializers import (AircraftSerializer, AirPortInfoSerializer,
+                          FlightSerializer)
 
 now = timezone.now()
 
