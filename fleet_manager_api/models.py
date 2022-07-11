@@ -18,11 +18,11 @@ class Aircraft(models.Model):
 
 class AirPortInfo(models.Model):
     id = models.UUIDField(primary_key=True, unique=True, default=uuid4, editable=False)
-    icao = models.CharField(max_length=4, unique=True)
+    icao = models.CharField(max_length=4)
     name = models.CharField(max_length=255)
     city = models.CharField(max_length=255)
     subd = models.CharField(max_length=255, null=True, blank=True)
-    country = models.CharField(max_length=255)
+    country = models.CharField(max_length=255, blank=True)
     elevation = models.FloatField(default=0.0, null=True, blank=True)
     lat = models.FloatField(default=0.0, null=True, blank=True)
     lon = models.FloatField(default=0.0, null=True, blank=True)

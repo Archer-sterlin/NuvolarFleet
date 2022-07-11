@@ -30,14 +30,24 @@ class AirportInfoView(generics.ListCreateAPIView):
         try:
             serializer = self.serializer_class(data=request.data)
             if serializer.is_valid(raise_exception=True):
-                serializer.save()
+                icaoRegex = re.compile(r"^\d{2}[A-Z]{2}$")
+                validate_icao = icaoRegex.search(serializer.validated_data["icao"]) is None
+                print(serializer.data)
+                if validate_icao:
+                    raise ValueError(
+                        "Invalid icao must conatin two digits and two uppercase letters"
+                    )
+                airport = AirPortInfo.objects.filter(icao=serializer.validated_data["icao"])
+                if len(airport) > 1:
+                    raise Exception("Airport with icao already exist")
+                airport = AirPortInfo.objects.create(**serializer.data) 
                 return response.Response(
                     serializer.data,
                     status=status.HTTP_201_CREATED,
                 )
 
-        except Exception:
-            return response.Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return response.Response({"error":f"{e}"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class EditAirportInfoView(generics.RetrieveUpdateDestroyAPIView):
@@ -189,7 +199,7 @@ class EditFlightScheduleView(generics.RetrieveUpdateDestroyAPIView):
             if aircraft and scheduled_flights:
                 raise Exception("Aircraft already booked")
 
-            return edit_flight(serializer, flight, flights=self.get_queryset)
+            return edit_flight(serializer, flight)
 
         except Exception as error:
             return response.Response(
@@ -212,7 +222,7 @@ class EditFlightScheduleView(generics.RetrieveUpdateDestroyAPIView):
             if aircraft and scheduled_flights:
                 raise Exception("Aircraft already booked")
 
-            return edit_flight(serializer, flight, flights=self.get_queryset)
+            return edit_flight(serializer, flight)
 
         except Exception as error:
             return response.Response(
@@ -265,7 +275,7 @@ class TimeIntervalListFlightView(generics.ListAPIView):
             return response.Response({"error": error}, status=status.HTTP_400_BAD_REQUEST)
 
 
-def edit_flight(serializer, flight, flights):
+def edit_flight(serializer, flight):
 
     icaoRegex = re.compile(r"^\d{2}[A-Z]{2}$")
     icao_arrival = (
@@ -339,18 +349,19 @@ def edit_flight(serializer, flight, flights):
 
 
 def edit_airport(serializer, airport):
-    icaoRegex = re.compile(r"^\d{2}[A-Z]{2}$")
-    icao = (
-        serializer.validated_data.get("icao")[0:2]
-        + serializer.validated_data.get("icao")[2:].upper()
-    )
+    if serializer.validated_data.get("icao"):
+        icaoRegex = re.compile(r"^\d{2}[A-Z]{2}$")
+        icao = (
+            serializer.validated_data.get("icao")[0:2]
+            + serializer.validated_data.get("icao")[2:].upper()
+        )
 
-    if icao:
-        validate_icao = icaoRegex.search(icao) is None
+        if icao:
+            validate_icao = icaoRegex.search(icao) is None
 
-    if validate_icao:
-        raise ValueError("Invalid icao must contain two digits and two uppercase letters")
-
+        if validate_icao:
+            raise ValueError("Invalid icao must contain two digits and two uppercase letters")
+        
     airport.icao = icao or airport.icao
     airport.name = serializer.validated_data.get("name") or airport.name
     airport.city = serializer.validated_data.get("city") or airport.city
