@@ -42,7 +42,6 @@ pipenv can also be used for venv
 download (mac with intel chip) https://www.docker.com/products/docker-desktop/
 #### Drag and drop into application folder to installed
 #### Run the docker app 
-#### docker uses postgres for database. To configure database settings, set `DOCKER=True`  in settings.py on  `it should be in line 32`
 #### to start server in the container, run  `docker-compose up` in a terminal window opened in the same directory as docker-compose.yml file
 #### to stop server in the container, push `control + c` run `docker-compose down` in a terminal window opened in the same directory as docker-compose.yml file
 #### while docker-compose is down or up, you can run normal commands like migrate, makemigrations, createsuperuser etc like so in another terminal window
