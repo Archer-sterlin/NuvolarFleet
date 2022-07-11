@@ -29,7 +29,7 @@ SECRET_KEY = config("SECRET_KEY")
 DEBUG = config("DEBUG", cast=bool, default=False)
 
 ALLOWED_HOSTS = ["*"]
-DOCKER = False
+DOCKER = True
 
 # Application definition
 
@@ -82,25 +82,15 @@ WSGI_APPLICATION = "project.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
-if DOCKER:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.environ.get("POSTGRES_NAME"),
-            "USER": os.environ.get("POSTGRES_USER"),
-            "PASSWORD": os.environ.get("POSTGRES_PASSWORD"),
-            "HOST": "db",
-            "PORT": 5432,
-        }
-    }
 
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
+
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
+}
 
 
 # Password validation
