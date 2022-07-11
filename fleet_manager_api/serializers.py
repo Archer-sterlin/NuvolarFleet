@@ -19,7 +19,3 @@ class AirPortInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = AirPortInfo
         fields = "__all__"
-
-            
-      
-            

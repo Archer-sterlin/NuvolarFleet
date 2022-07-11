@@ -40,14 +40,14 @@ class AirportInfoView(generics.ListCreateAPIView):
                 airport = AirPortInfo.objects.filter(icao=serializer.validated_data["icao"])
                 if len(airport) > 1:
                     raise Exception("Airport with icao already exist")
-                airport = AirPortInfo.objects.create(**serializer.data) 
+                airport = AirPortInfo.objects.create(**serializer.data)
                 return response.Response(
                     serializer.data,
                     status=status.HTTP_201_CREATED,
                 )
 
         except Exception as e:
-            return response.Response({"error":f"{e}"}, status=status.HTTP_400_BAD_REQUEST)
+            return response.Response({"error": f"{e}"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class EditAirportInfoView(generics.RetrieveUpdateDestroyAPIView):
@@ -361,7 +361,7 @@ def edit_airport(serializer, airport):
 
         if validate_icao:
             raise ValueError("Invalid icao must contain two digits and two uppercase letters")
-        
+
     airport.icao = icao or airport.icao
     airport.name = serializer.validated_data.get("name") or airport.name
     airport.city = serializer.validated_data.get("city") or airport.city
