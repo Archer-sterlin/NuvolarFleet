@@ -6,7 +6,8 @@ from django.utils import timezone
 from rest_framework import generics, response, status
 
 from .models import Aircraft, AirPortInfo, Flight
-from .serializers import AircraftSerializer, AirPortInfoSerializer, FlightSerializer
+from .serializers import (AircraftSerializer, AirPortInfoSerializer,
+                          FlightSerializer)
 
 now = timezone.now()
 
@@ -177,7 +178,18 @@ class EditFlightScheduleView(generics.RetrieveUpdateDestroyAPIView):
             serializer = self.serializer_class(data=request.data)
             if serializer.is_valid(raise_exception=True):
                 flight = get_object_or_404(Flight, id=self.kwargs["pk"])
-                return edit_flight(serializer, flight)
+                arrival = serializer.validated_data.get("arrival")
+                departure = serializer.validated_data.get("departure")
+                aircraft = serializer.validated_data.get("aircraft")
+                queryset = self.get_queryset()
+                scheduled_flights = queryset.filter(
+                    departure__range=[departure, arrival], aircraft=aircraft
+                )
+
+            if aircraft and scheduled_flights:
+                raise Exception("Aircraft already booked")
+
+            return edit_flight(serializer, flight, flights=self.get_queryset)
 
         except Exception as error:
             return response.Response(
@@ -188,8 +200,19 @@ class EditFlightScheduleView(generics.RetrieveUpdateDestroyAPIView):
         try:
             serializer = self.serializer_class(data=request.data)
             if serializer.is_valid(raise_exception=True):
+                arrival = serializer.validated_data.get("arrival")
+                departure = serializer.validated_data.get("departure")
+                aircraft = serializer.validated_data.get("aircraft")
                 flight = get_object_or_404(Flight, id=self.kwargs["pk"])
-                return edit_flight(serializer, flight)
+                queryset = self.get_queryset()
+                scheduled_flights = queryset.filter(
+                    departure__range=[departure, arrival], aircraft=aircraft
+                )
+
+            if aircraft and scheduled_flights:
+                raise Exception("Aircraft already booked")
+
+            return edit_flight(serializer, flight, flights=self.get_queryset)
 
         except Exception as error:
             return response.Response(
@@ -242,7 +265,7 @@ class TimeIntervalListFlightView(generics.ListAPIView):
             return response.Response({"error": error}, status=status.HTTP_400_BAD_REQUEST)
 
 
-def edit_flight(serializer, flight):
+def edit_flight(serializer, flight, flights):
 
     icaoRegex = re.compile(r"^\d{2}[A-Z]{2}$")
     icao_arrival = (

@@ -37,6 +37,7 @@ class TestFlightEndpoint(APITestCase):
         self.aircraft = Aircraft.objects.create(**self.aircraft_info)
         self.aircraft2 = Aircraft.objects.create(**self.aircraft_info2)
         self.aircraft3 = Aircraft.objects.create(**self.aircraft_info3)
+        self.aircraft3_id = self.aircraft3.id
 
         self.airport_info = {
             "icao": "96GG",
@@ -79,8 +80,8 @@ class TestFlightEndpoint(APITestCase):
         self.flight_info2 = {
             "departure_airport": "96GG",
             "arrival_airport": "88GG",
-            "departure": self.tomorrow,
-            "arrival": self.next_tomorrow,
+            "departure": self.tomorrow + timedelta(days=3),
+            "arrival": self.next_tomorrow + timedelta(days=3),
             "aircraft": self.aircraft2,
             "updated_at": "2022-07-06T12:23:55.838418Z",
             "created_at": "2022-07-06T12:23:55.833731Z",
@@ -97,6 +98,7 @@ class TestFlightEndpoint(APITestCase):
         }
         self.flight = Flight.objects.create(**self.flight_info2)
         self.flight3 = Flight.objects.create(**self.flight_info3)
+        self.flight_id = self.flight.id
 
     def test_list_flights(self):
         res = self.client.get(reverse(self.flight_url))
@@ -126,13 +128,17 @@ class TestFlightEndpoint(APITestCase):
             "arrival_airport": "88GG",
             "departure": self.tomorrow,
             "arrival": self.three_days_from_now,
-            "aircraft": self.aircraft.id,
+            "aircraft": self.aircraft2.id,
         }
         res = self.client.put(
+            reverse(self.edit_flight_url, kwargs={"pk": self.flight3.id}), flight_info
+        )
+        res2 = self.client.put(
             reverse(self.edit_flight_url, kwargs={"pk": self.flight.id}), flight_info
         )
         res_arrival = res.data.get("arrival")
         self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res2.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(res_arrival, self.three_days_from_now)
 
     def test_patch_flight(self):
