@@ -22,7 +22,6 @@ class TestAirPortInfoEndpoint(APITestCase):
         }
         self.airport = AirPortInfo.objects.create(**self.airport_info)
         self.airport_id = self.airport.icao
-        self.airport.save()
 
     def test_list_airport(self):
         res = self.client.get(reverse(self.list_create_aircrafts_url))

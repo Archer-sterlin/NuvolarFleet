@@ -30,7 +30,6 @@ class TestAircraftEndpoint(APITestCase):
 
         self.aircraft = Aircraft.objects.create(**self.aircraft_info2)
         self.aircraft_id = str(self.aircraft.id)
-        self.aircraft.save()
 
     def test_list_aircraft(self):
         res = self.client.get(reverse(self.list_create_aircrafts_url))
@@ -44,17 +43,17 @@ class TestAircraftEndpoint(APITestCase):
         self.assertEqual(res_fail.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_get_aircraft(self):
-        res = self.client.get(reverse(self.aircraft_url, kwargs={"pk": self.aircraft_id}))
+        res = self.client.get(reverse(self.aircraft_url, kwargs={"pk": self.aircraft.id}))
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(res.data.get("id"), self.aircraft_id)
+        self.assertEqual(res.data.get("id"), str(self.aircraft.id))
 
     def test_put_aircraft(self):
         res = self.client.put(
-            reverse(self.aircraft_url, kwargs={"pk": self.aircraft_id}),
+            reverse(self.aircraft_url, kwargs={"pk": self.aircraft.id}),
             self.aircraft_info_put,
         )
 
-        res_fail_put = self.client.put(reverse(self.aircraft_url, kwargs={"pk": self.aircraft_id}))
+        res_fail_put = self.client.put(reverse(self.aircraft_url, kwargs={"pk": self.aircraft.id}))
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res_fail_put.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -62,12 +61,12 @@ class TestAircraftEndpoint(APITestCase):
         aircraft_info_patch = {"manufacturer": "Tesla"}
 
         res = self.client.patch(
-            reverse(self.aircraft_url, kwargs={"pk": self.aircraft_id}),
+            reverse(self.aircraft_url, kwargs={"pk": self.aircraft.id}),
             aircraft_info_patch,
         )
         self.assertEqual(res.status_code, status.HTTP_200_OK)
 
     def test_delete_aircraft(self):
-        res = self.client.delete(reverse(self.aircraft_url, kwargs={"pk": self.aircraft_id}))
+        res = self.client.delete(reverse(self.aircraft_url, kwargs={"pk": self.aircraft.id}))
 
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
