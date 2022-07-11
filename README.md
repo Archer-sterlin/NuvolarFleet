@@ -6,10 +6,11 @@ pipenv can also be used for venv
 
 1. `pip install -r requirements.txt` or `pipenv install` if you are using pipenv 
 2. Create a `.env` File and add the following `SECRET_KEY=yoursecret`, in the next line `DEBUG=True` if you want debugging.
-3. run `python manage.py test` run test
-4. run `python manage.py runserver` to start local server
-5. while the server is running, make a request to `http://0.0.0.0:8000/swagger/` for openapi documentation 
-6. time range request parameter format  `day-month-year-hours:minutes:seconds` i.e `08-07-2022+02:50:00` 
+3. create migrations and migrate `python manage.py makemigrations` and `python manage.py migrate` in terminal.
+4. run `python manage.py test` run test
+5. run `python manage.py runserver` to start local server
+6. while the server is running, make a request to `http://0.0.0.0:8000/swagger/` for openapi documentation 
+7. time range request parameter format  `day-month-year-hours:minutes:seconds` i.e `08-07-2022+02:50:00` 
 
 
 
