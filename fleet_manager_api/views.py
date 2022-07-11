@@ -6,7 +6,8 @@ from django.utils import timezone
 from rest_framework import generics, response, status
 
 from .models import Aircraft, AirPortInfo, Flight
-from .serializers import AircraftSerializer, AirPortInfoSerializer, FlightSerializer
+from .serializers import (AircraftSerializer, AirPortInfoSerializer,
+                          FlightSerializer)
 
 now = timezone.now()
 
@@ -23,33 +24,20 @@ class ListAirCraftView(generics.ListCreateAPIView):
 
 class AirportInfoView(generics.ListCreateAPIView):
     serializer_class = AirPortInfoSerializer
-    queryset = AirPortInfo.objects.all()[:100]
+    queryset = AirPortInfo.objects.all()
 
     def post(self, request, *args, **kwargs):
         try:
             serializer = self.serializer_class(data=request.data)
             if serializer.is_valid(raise_exception=True):
-                airport_data = serializer.validated_data
-
-                icaoRegex = re.compile(r"^\d{2}[A-Z]{2}$")
-                validate_icao = icaoRegex.search(serializer.validated_data["icao"]) is None
-
-                if validate_icao:
-                    raise ValueError(
-                        "Invalid depature icao must conatin two digits and two uppercase letters"
-                    )
-
-                airport = AirPortInfo(**airport_data)
-                airport.save()
+                serializer.save()
                 return response.Response(
-                    data={"success": "Airport added successfully"},
+                    serializer.data,
                     status=status.HTTP_201_CREATED,
                 )
 
-        except Exception as error:
-            return response.Response(
-                data={"message": f"{error}"}, status=status.HTTP_400_BAD_REQUEST
-            )
+        except Exception:
+            return response.Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class EditAirportInfoView(generics.RetrieveUpdateDestroyAPIView):
@@ -121,6 +109,12 @@ class FlightScheduleView(generics.ListCreateAPIView):
                 departure = serializer.validated_data["departure"]
                 departure_airport = airports.get(icao=icao_departure)
                 aircraft = serializer.validated_data["aircraft"]
+                scheduled_flights = self.queryset.filter(
+                    departure__range=[departure, arrival], aircraft=aircraft
+                )
+
+                if aircraft and scheduled_flights:
+                    raise Exception("Aircraft already booked")
 
                 if icao_arrival == icao_departure:
                     raise Exception("arrival airport cannot be the same as departure airport")
@@ -184,7 +178,18 @@ class EditFlightScheduleView(generics.RetrieveUpdateDestroyAPIView):
             serializer = self.serializer_class(data=request.data)
             if serializer.is_valid(raise_exception=True):
                 flight = get_object_or_404(Flight, id=self.kwargs["pk"])
-                return edit_flight(serializer, flight)
+                arrival = serializer.validated_data.get("arrival")
+                departure = serializer.validated_data.get("departure")
+                aircraft = serializer.validated_data.get("aircraft")
+                queryset = self.get_queryset()
+                scheduled_flights = queryset.filter(
+                    departure__range=[departure, arrival], aircraft=aircraft
+                )
+
+            if aircraft and scheduled_flights:
+                raise Exception("Aircraft already booked")
+
+            return edit_flight(serializer, flight, flights=self.get_queryset)
 
         except Exception as error:
             return response.Response(
@@ -195,8 +200,19 @@ class EditFlightScheduleView(generics.RetrieveUpdateDestroyAPIView):
         try:
             serializer = self.serializer_class(data=request.data)
             if serializer.is_valid(raise_exception=True):
+                arrival = serializer.validated_data.get("arrival")
+                departure = serializer.validated_data.get("departure")
+                aircraft = serializer.validated_data.get("aircraft")
                 flight = get_object_or_404(Flight, id=self.kwargs["pk"])
-                return edit_flight(serializer, flight)
+                queryset = self.get_queryset()
+                scheduled_flights = queryset.filter(
+                    departure__range=[departure, arrival], aircraft=aircraft
+                )
+
+            if aircraft and scheduled_flights:
+                raise Exception("Aircraft already booked")
+
+            return edit_flight(serializer, flight, flights=self.get_queryset)
 
         except Exception as error:
             return response.Response(
@@ -216,7 +232,7 @@ class TimeIntervalListFlightView(generics.ListAPIView):
                 raise ValueError("start time range cannot be ahead of stop time range")
 
             airports = AirPortInfo.objects.all()
-            departure_airport_list = Flight.objects.filter(departure__gt=start, departure__lt=stop)
+            departure_airport_list = Flight.objects.filter(departure__range=[start, stop])
             data = []
             for info in departure_airport_list:
                 d_airport = airports.get(icao=info.departure_airport)
@@ -249,7 +265,7 @@ class TimeIntervalListFlightView(generics.ListAPIView):
             return response.Response({"error": error}, status=status.HTTP_400_BAD_REQUEST)
 
 
-def edit_flight(serializer, flight):
+def edit_flight(serializer, flight, flights):
 
     icaoRegex = re.compile(r"^\d{2}[A-Z]{2}$")
     icao_arrival = (
